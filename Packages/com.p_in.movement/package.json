@@ -1,7 +1,7 @@
 {
   "name": "com.p_in.movement",
   "displayName": "Painly Movement",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "unity": "6000.4",
   "unityRelease": "1f1",
   "description": "Package for player movement",
