@@ -395,7 +395,7 @@ GameObject:
   - component: {fileID: 495446432}
   - component: {fileID: 495446431}
   - component: {fileID: 495446430}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Ground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -587,7 +587,7 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 0
+  m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 112
@@ -606,10 +606,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: painly.movement::painly.movement.PlayerMovement
   m_speed: 10
   m_sprintMult: 3
-  m_usePhysics: 0
-  m_movementAxis: 1
+  m_movementAxis: 2
+  m_jumpForce: 5
+  m_coyoteTime: 0.2
+  m_groundCheckDist: 1
+  m_groundLayer:
+    serializedVersion: 2
+    m_Bits: 64
   m_moveActionRef: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_sprintActionRef: {fileID: -7471211009204490832, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_jumpActionRef: {fileID: -2099379676528639254, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!65 &1908992681
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -617,7 +623,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1908992678}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 8b338ff1cff1f7c61b4a137f511f0bc5, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
