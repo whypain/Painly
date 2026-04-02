@@ -20,9 +20,10 @@ namespace Painly.Movement
         [SerializeField] private MovementAxis m_movementAxis = MovementAxis.XZ;
 
         [Space] [Header("Jump Settings")] 
-        [SerializeField] private float m_jumpForce;
-        [SerializeField] private float m_coyoteTime;
-        [SerializeField] private float m_groundCheckDist;
+        [SerializeField] private float m_jumpForce = 5;
+        [SerializeField] private float m_coyoteTime = 0.2f;
+        [SerializeField] private float m_jumpCooldown = 1;
+        [SerializeField] private float m_groundCheckDist = 1;
         [SerializeField] private LayerMask m_groundLayer;
 
         [Space] [Header("Input Settings")]
@@ -57,7 +58,7 @@ namespace Painly.Movement
         private void Awake()
         {
             m_currSpeed = m_speed;
-            m_jumpEngine = new JumpEngine(transform, m_coyoteTime, m_groundLayer, m_groundCheckDist);
+            m_jumpEngine = new JumpEngine(transform, m_coyoteTime, m_groundLayer, m_groundCheckDist, m_jumpCooldown);
         }
 
         private void OnEnable()
@@ -122,6 +123,7 @@ namespace Painly.Movement
             if (m_jumpEngine.CanJump)
             {
                 jumpHandler();
+                m_jumpEngine.OnJump();
             }
         }
 
