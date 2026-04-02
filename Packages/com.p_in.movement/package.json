@@ -1,0 +1,14 @@
+{
+  "name": "com.p_in.movement",
+  "displayName": "Painly Movement",
+  "version": "0.1.0",
+  "unity": "6000.4",
+  "unityRelease": "1f1",
+  "description": "Package for player movement",
+  "dependencies": {
+    "com.unity.inputsystem": "1.19.0"
+  },
+  "author": {
+    "name": "le pain"
+  }
+}

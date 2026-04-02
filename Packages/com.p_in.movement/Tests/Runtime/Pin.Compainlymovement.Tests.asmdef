@@ -1,0 +1,11 @@
+{
+    "name": "Pin.Compainlymovement.Tests",
+    "references": [
+        "Pin.Compainlymovement"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": []
+}

@@ -1,0 +1,14 @@
+{
+    "name": "Pin.Compainlymovement.Editor.Tests",
+    "references": [
+        "Pin.Compainlymovement.Editor",
+        "Pin.Compainlymovement"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": []
+}
