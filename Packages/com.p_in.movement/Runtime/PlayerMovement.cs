@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,10 +10,11 @@ namespace Painly.Movement
         XZ,
     }
 
+    [RequireComponent(typeof(Rigidbody), typeof(PlayerMovementState), typeof(PlayerStat))]
     public class PlayerMovement : MonoBehaviour
     {
-        [SerializeField] private float m_speed = 10;
-        [SerializeField] private float m_sprintMult = 0.2f;
+        [SerializeField] private float m_acceleration = 5f;
+        [SerializeField] private float m_rotationSpeed = 10;
         
         [Space]
         [SerializeField] private MovementAxis m_movementAxis = MovementAxis.XZ;
@@ -22,6 +22,7 @@ namespace Painly.Movement
         [Space] [Header("Jump Settings")] 
         [SerializeField] private float m_jumpForce = 5;
         [SerializeField] private float m_coyoteTime = 0.2f;
+        [SerializeField] private float m_jumpDelay = 0.2f;
         [SerializeField] private float m_jumpCooldown = 1;
         [SerializeField] private float m_groundCheckDist = 1;
         [SerializeField] private LayerMask m_groundLayer;
@@ -32,37 +33,25 @@ namespace Painly.Movement
         [SerializeField] private InputActionReference m_jumpActionRef;
 
         private Rigidbody m_rigidbody;
+        private PlayerMovementState m_movementState;
+        private PlayerStat m_playerStat;
         private JumpEngine m_jumpEngine;
         private Vector3 m_inputDir;
-        private float m_currSpeed;
 
-        public void SetSpeed(float newSpeed)
+        public void SetWalkSpeed(float newSpeed)
         {
-            m_speed = newSpeed;
-            m_currSpeed = m_speed;
-            if (m_sprintActionRef.action.IsPressed())
-            {
-                m_currSpeed = m_speed * m_sprintMult;
-            }
+            m_playerStat.WalkSpeed = newSpeed;
         }
         
-        /// <summary>
-        /// set sprint multiplier
-        /// </summary>
-        /// <param name="value"></param>
-        public void SetSprintMult(float value)
+        public void SetSprintSpeed(float value)
         {
-            m_sprintMult = value;
-        }
-        
-        private void Awake()
-        {
-            m_currSpeed = m_speed;
-            m_jumpEngine = new JumpEngine(transform, m_coyoteTime, m_groundLayer, m_groundCheckDist, m_jumpCooldown);
+            m_playerStat.SprintSpeed = value;
         }
 
         private void OnEnable()
         {
+            m_jumpEngine = new JumpEngine(transform, m_coyoteTime, m_groundLayer, m_groundCheckDist, m_jumpCooldown);
+
             InputAction move = m_moveActionRef.action;
             InputAction sprint = m_sprintActionRef.action;
             InputAction jump = m_jumpActionRef.action;
@@ -99,38 +88,53 @@ namespace Painly.Movement
             jump.performed -= OnJump;
         }
 
+        private void OnSprint(InputAction.CallbackContext ctx) 
+            => m_movementState.IsSprinting = ctx.performed;
+        private void OnJump(InputAction.CallbackContext _) 
+            => m_jumpEngine.RequestJump(m_rigidbody, m_jumpForce, m_jumpDelay);
+        
+
+        private void Update()
+        {
+            m_jumpEngine.Tick(Time.deltaTime);
+            UpdateMovementState();
+        }
+
         private void FixedUpdate()
         {
-            m_jumpEngine.Tick(Time.fixedDeltaTime);
-            if (m_inputDir != Vector3.zero) HandleMove();
-        }
-
-        private void OnSprint(InputAction.CallbackContext ctx)
-        {
-            if (ctx.canceled) m_currSpeed = m_speed;
-            else if (ctx.performed) m_currSpeed = m_speed * m_sprintMult;
-        }
-
-        private void OnJump(InputAction.CallbackContext _)
-        {
-            Action jumpHandler = m_movementAxis switch
-            {
-                MovementAxis.X => JumpInYAxis,
-                MovementAxis.XZ => JumpInYAxis,
-                _ => () => { }
-            };
-            
-            if (m_jumpEngine.CanJump)
-            {
-                jumpHandler();
-                m_jumpEngine.OnJump();
-            }
+            HandleRotation();
+            HandleMove();
         }
 
         private void HandleMove()
         {
-            m_rigidbody.linearVelocity += m_inputDir * (m_currSpeed * Time.fixedDeltaTime);
-            m_rigidbody.linearVelocity = Vector3.ClampMagnitude(m_rigidbody.linearVelocity, m_currSpeed);
+            if (m_inputDir == Vector3.zero) return;
+            float maxSpeed = m_movementState.IsSprinting ? m_playerStat.SprintSpeed : m_playerStat.WalkSpeed;
+
+            var lv = m_rigidbody.linearVelocity;
+            lv += transform.forward * maxSpeed * Time.fixedDeltaTime;
+            lv += transform.forward * m_acceleration * Time.fixedDeltaTime;
+            lv = Vector3.ClampMagnitude(lv, maxSpeed);
+
+            m_rigidbody.linearVelocity = new Vector3(lv.x, m_rigidbody.linearVelocity.y, lv.z);
+        }
+
+        private void HandleRotation()
+        {
+            Vector3 steer = (m_inputDir + transform.forward).normalized;
+
+            transform.forward = Vector3.Lerp(transform.forward, steer, m_rotationSpeed * Time.fixedDeltaTime);
+
+            // Lock X and Z rotation to prevent tipping over
+            transform.eulerAngles = new Vector3(0, transform.eulerAngles.y, 0);
+        }
+
+        private void UpdateMovementState()
+        {
+            m_movementState.CurrentSpeed = m_rigidbody.linearVelocity.magnitude;
+            m_movementState.IsGrounded = m_jumpEngine.IsGrounded;
+            m_movementState.IsJumping = m_jumpEngine.CanJump && m_jumpEngine.IsJumpRequested;
+            m_movementState.IsFalling = !m_jumpEngine.IsGrounded && m_rigidbody.linearVelocity.y < 0;
         }
 
         private void OnMove(InputAction.CallbackContext ctx)
@@ -151,18 +155,11 @@ namespace Painly.Movement
             }
         }
 
-        private void JumpInYAxis()
-        {
-            m_rigidbody.AddForce(Vector3.up * m_jumpForce, ForceMode.Impulse);
-        }
-
         private void OnValidate()
         {
-            m_currSpeed = m_speed;
-            if (!TryGetComponent(out m_rigidbody))
-            {
-                m_rigidbody = gameObject.AddComponent<Rigidbody>();
-            }
+            m_rigidbody ??= GetComponent<Rigidbody>();
+            m_movementState ??= GetComponent<PlayerMovementState>();
+            m_playerStat ??= GetComponent<PlayerStat>();
         }
     }
 }

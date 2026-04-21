@@ -1,9 +1,16 @@
+using System;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Painly.Movement
 {
+    [System.Serializable]
     public class JumpEngine
     {
+        public event Action OnLanded;
+        public bool IsGrounded => m_isGrounded;
+        public bool IsJumpRequested { get; private set; }
+
         private readonly Transform m_transform;
         private readonly float m_coyoteTime;
         private readonly float m_jumpCooldown;
@@ -22,7 +29,7 @@ namespace Painly.Movement
         {
             m_transform = transform;
             m_coyoteTime = coyoteTime;
-            m_jumpCooldown = groundCheckDist;
+            m_jumpCooldown = jumpCooldown;
             m_groundLayer = groundLayer;
             m_groundCheckDist = groundCheckDist;
         }
@@ -56,23 +63,32 @@ namespace Painly.Movement
                 m_isGrounded = false;
                 return;
             }
+            if (!m_isGrounded && isGroundedNow)
+            {
+                OnLanded?.Invoke();
+                IsJumpRequested = false;
+            }
             
             m_isGrounded = isGroundedNow;
         }
 
-        public void OnJump()
+        public async void RequestJump(Rigidbody rb, float jumpForce, float jumpDelay)
         {
-            m_isInJumpCooldownPeriod = true;
-            m_jumpCooldownPeriod = m_jumpCooldown;
+            if (CanJump)
+            {
+                IsJumpRequested = true;
+                await Task.Delay(TimeSpan.FromSeconds(jumpDelay));
+                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+                m_isInJumpCooldownPeriod = true;
+                m_jumpCooldownPeriod = m_jumpCooldown;
+            }
         }
 
         private bool RaycastGround()
         {
-            return Physics.Raycast(
-                origin: m_transform.position, 
-                direction: Vector3.down, 
-                m_groundCheckDist,
-                m_groundLayer);
+            Ray ray = new Ray(m_transform.position, Vector3.down * m_groundCheckDist);
+            Debug.DrawRay(ray.origin, ray.direction * m_groundCheckDist, Color.red);
+            return Physics.Raycast(ray, m_groundCheckDist, m_groundLayer);
         }
     }
 }
