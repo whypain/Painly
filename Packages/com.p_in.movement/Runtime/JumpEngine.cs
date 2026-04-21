@@ -9,7 +9,7 @@ namespace Painly.Movement
     {
         public event Action OnLanded;
         public bool IsGrounded => m_isGrounded;
-        public bool IsJumpRequested { get; private set; }
+        public bool IsJumping { get; private set; }
 
         private readonly Transform m_transform;
         private readonly float m_coyoteTime;
@@ -66,7 +66,7 @@ namespace Painly.Movement
             if (!m_isGrounded && isGroundedNow)
             {
                 OnLanded?.Invoke();
-                IsJumpRequested = false;
+                IsJumping = false;
             }
             
             m_isGrounded = isGroundedNow;
@@ -76,7 +76,7 @@ namespace Painly.Movement
         {
             if (CanJump)
             {
-                IsJumpRequested = true;
+                IsJumping = true;
                 await Task.Delay(TimeSpan.FromSeconds(jumpDelay));
                 rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
                 m_isInJumpCooldownPeriod = true;

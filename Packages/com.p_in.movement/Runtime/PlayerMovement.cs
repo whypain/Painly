@@ -108,20 +108,24 @@ namespace Painly.Movement
 
         private void HandleMove()
         {
+            Vector3 localInputDir = transform.TransformDirection(m_inputDir);
+            Debug.DrawRay(transform.position + Vector3.up * 2f, localInputDir, Color.green);
+            Debug.DrawRay(transform.position + Vector3.up * 2f, transform.forward, Color.blue);
+
             if (m_inputDir == Vector3.zero) return;
             float maxSpeed = m_movementState.IsSprinting ? m_playerStat.SprintSpeed : m_playerStat.WalkSpeed;
 
             var lv = m_rigidbody.linearVelocity;
-            lv += transform.forward * maxSpeed * Time.fixedDeltaTime;
-            lv += transform.forward * m_acceleration * Time.fixedDeltaTime;
+            lv += localInputDir * m_acceleration;
             lv = Vector3.ClampMagnitude(lv, maxSpeed);
 
-            m_rigidbody.linearVelocity = new Vector3(lv.x, m_rigidbody.linearVelocity.y, lv.z);
+            m_rigidbody.linearVelocity = lv;
         }
 
         private void HandleRotation()
         {
-            Vector3 steer = (m_inputDir + transform.forward).normalized;
+            Vector3 localInputDir = transform.TransformDirection(m_inputDir);
+            Vector3 steer = (localInputDir + transform.forward).normalized;
 
             transform.forward = Vector3.Lerp(transform.forward, steer, m_rotationSpeed * Time.fixedDeltaTime);
 
@@ -133,7 +137,7 @@ namespace Painly.Movement
         {
             m_movementState.CurrentSpeed = m_rigidbody.linearVelocity.magnitude;
             m_movementState.IsGrounded = m_jumpEngine.IsGrounded;
-            m_movementState.IsJumping = m_jumpEngine.CanJump && m_jumpEngine.IsJumpRequested;
+            m_movementState.IsJumping = m_jumpEngine.IsJumping;
             m_movementState.IsFalling = !m_jumpEngine.IsGrounded && m_rigidbody.linearVelocity.y < 0;
         }
 
